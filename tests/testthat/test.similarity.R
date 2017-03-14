@@ -78,3 +78,21 @@ test_that("Recommendations work with group", {
   expect_warning(getSimilarProducts(m, viewed.skus, 5, exclude.same = T))
 })
 
+test_that("Weighting a similarity matrix", {
+    
+  m <- test.sim.matrix
+  w <- c("a" = 1, "e" = 0.22, "b" = 0.75, "c" = 0.5, "d" = 0.25)
+  res <- abjustSimMatrix(m, w)
+
+  expect_identical(m[, 1], res[, 1], "First column returned correctly with no changes")
+  expect_identical(m[, 2]*0.75, res[, 2], "Order is kept and calculation is correct")
+
+  w <- c("a" = 1)
+  res <- abjustSimMatrix(m, w)
+  expect_identical(m[, 3] * 0, res[, 3], "Defaulting is working as expected")
+
+  w <- c("b" = 0.2, "a" = 1)
+  res <- abjustSimMatrix(m, w)
+  expect_identical(m[, 2] * 0.2, res[, 2], "Ordering is kept intact")
+  
+})

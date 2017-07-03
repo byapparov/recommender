@@ -23,7 +23,7 @@ recommendSimilar <- function(sim.matrix, skus, values, exclude.same, groups = NU
   similarity.scores <- keepOnePerGroup(similarity.scores, groups)
 
   # Limit results to the requested number of skus
-  res <- head(similarity.scores[order(sim, decreasing = T)]$sku.rec, values)
+  res <- head(similarity.scores[order(sim, decreasing = T)]$sku, values)
 
   return (res)
 }
@@ -43,7 +43,8 @@ combineSimilarity <- function(sim.matrix, skus, exclude.same) {
 
   # Group similiarity score by recommended sku
   combined.scores <- product.affinity[, list(sim = mean(sim)), by = sku.rec]
-  setkey(combined.scores, "sku.rec")
+  setnames(combined.scores, "sku.rec", "sku")
+  setkey(combined.scores, "sku")
   return(combined.scores)
 }
 
@@ -72,10 +73,11 @@ keepOnePerGroup <- function(dt, groups) {
   if(is.null(groups)) return(dt)
 
   # Append group data to affinity table
-  groups.table <- data.table(sku = names(groups), group = groups, key= "sku")
+  groups.table <- data.table(sku = names(groups), group = groups, key = "sku")
   dt <- dt[groups.table, nomatch = 0]
 
   # Get the best performing sku per group
   # http://stackoverflow.com/questions/16573995/subset-by-group-with-data-table
-  dt <- dt[dt[, .I[sim == max(sim)], by = group]$V1]
+  by.cols <- setdiff(colnames(dt), c("sku", "sim"))
+  dt <- dt[dt[, .I[sim == max(sim)], by = by.cols]$V1]
 }

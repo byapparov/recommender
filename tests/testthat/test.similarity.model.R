@@ -1,5 +1,7 @@
 context("Similarity Class")
 
+test.sim.model <- testSimilarityModel()
+
 test_that("Test simlarity model and predict", {
   user.hits <- data.table(users =    c("u1", "u2", "u1", "u3", "u2", "u1"),
                           products = c("p1", "p2", "p3", "p2", "p3", "p4"))
@@ -8,8 +10,50 @@ test_that("Test simlarity model and predict", {
   new.hits <- data.table(users = c("u5", "u5", "u6", "u7", "u6"),
                          sku =   c("p3", "p4", "p1", "p1", "p2"))
 
-  new.hits.expanded <- expandVisits(model, new.hits)
+  new.hits.expanded <- expandHits(model, new.hits)
 
-  scores <- predict(model, new.hits.expanded)
-  expect_equal(scores[sku == "p1" & sku.rec == "p3", sim], rep(0.408, 2), tolerance = 1e-2)
+  new.hits.expanded$sim <- predict(model, new.hits.expanded)
+  expect_equal(new.hits.expanded[sku == "p1" & sku.rec == "p3", sim], rep(0.408, 2), tolerance = 1e-2)
+})
+
+test_that("Test expanding of hits to new dataset", {
+  groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p1")
+  page.views <- data.table(visitor.id = c("u1", "u1"), sku = c("a", "b"))
+  newdata <- expandHits(test.sim.model, page.views)
+  newdata$sim <- predict(test.sim.model, newdata)
+
+  # Hit to a product that is missing from the model
+  page.views <-  data.table(visitor.id = c("u1"), sku = c("z"))
+  newdata <- expect_warning(expandHits(test.sim.model, page.views), regexp = "skus are missing.*z$")
+
+})
+
+test_that("Test predict for similarity model", {
+
+  groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p1")
+  page.views <- data.table(visitor.id = c("u1", "u1"), sku = c("a", "b"))
+  newdata <- expandHits(test.sim.model, page.views)
+  res <- recommendSimilarProducts(test.sim.model, page.views)
+  res.filterred <- filterRecommendations(res, groups, values = 2)
+
+  expect_equal(sort(res.filterred$sku), c("c", "d"), "As c and d are in different groups we get both")
+
+  # Setting same group for c & d
+  groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p3")
+  res.filterred <- filterRecommendations(res, groups, values = 2)
+  expect_equal(res.filterred$sku, c("d"), "As c and d are in the same group we get one")
+
+  # Recommend single sku:
+  page.views <- data.table(visitor.id = c("u1"), sku = c("a"))
+  newdata <- expandHits(test.sim.model, page.views)
+  res <- recommendSimilarProducts(test.sim.model, page.views)
+  res.filterred <- filterRecommendations(res, groups, values = 1)
+
+  expect_identical(nrow(res.filterred), 1L, "One row retured as requested")
+
+  # SKU does not exist in the matrix:
+  page.views <-  data.table(visitor.id = c("u1"), sku = c("z"))
+  res <- recommendSimilarProducts(test.sim.model, page.views)
+  expect_identical(nrow(res), 0L, "Result is empty for the SKU that is not in the similarity model")
+
 })

@@ -6,6 +6,7 @@ test.sim.matrix <- c(1.00, 0.52, 0.41, 0.52,
                      0.62, 0.80, 0.25, 0.16 )
 
 test.sim.matrix <- matrix(test.sim.matrix, nrow = 4, ncol = 4)
+class(test.sim.matrix) <- c("matrix", "similarity.recommender")
 colnames(test.sim.matrix) <- rownames(test.sim.matrix) <- c("a", "b", "c", "d")
 
 test_that("Similarity matrix is calculated correctly.", {

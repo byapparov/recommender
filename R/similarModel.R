@@ -44,19 +44,24 @@ expandHits <- function(object, data) {
   return(newdata)
 }
 
+#' @export
 recommendSimilarProducts <- function(model, hits, exclude.same = TRUE) {
   visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
 
-  newdata <- expandHits(model, hits)
-  if(exclude.same) { # exclude seen products from recommendations
-    newdata[, same := sku.rec %in% sku, visitor.id]
-    newdata <- newdata[!same == TRUE][, same := NULL]
-  }
-  newdata$sim <- predict(model, newdata)
+  hits.l <- split(hits, by = "visitor.id")
+  res <- lapply(hits.l, function(visitor.hits) {
+    newdata <- expandHits(model, visitor.hits)
+    if(exclude.same) { # exclude seen products from recommendations
+      newdata[, same := sku.rec %in% sku, visitor.id]
+      newdata <- newdata[!same == TRUE][, same := NULL]
+    }
+    newdata$sim <- predict(model, newdata)
 
-  # Only keep skus that are in the similarity matrix
-  newdata <- newdata[!is.na(sim)]
-  newdata <- newdata[, list(sim = mean(sim)), by = list(visitor.id, sku.rec)]
+    # Only keep skus that are in the similarity matrix
+    newdata <- newdata[!is.na(sim)]
+    newdata <- newdata[, list(sim = mean(sim)), by = list(visitor.id, sku.rec)]
+  })
+  newdata <- rbindlist(res)
   setnames(newdata, "sku.rec", "sku")
   setkey(newdata, sku)
 

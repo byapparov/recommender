@@ -1,3 +1,4 @@
+library(parallel)
 
 #' @export
 similarityRecommender <- function(data, filter = NULL) {
@@ -17,11 +18,13 @@ similarityRecommender <- function(data, filter = NULL) {
 #' @param newdata product hits data
 predict.similarity.recommender <- function(object, newdata) {
   score <- NULL
+  colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
 
-  similarity <- melt(object[, , drop=FALSE], na.rm = T)
+  target.skus <- intersect(unique(newdata[, sku]), colnames(object))
+  similarity <- melt(object[target.skus, , drop=FALSE], na.rm = T)
+  if(nrow(similarity) == 0L) return (as.numeric(NULL))
   colnames(similarity) <- c("sku", "sku.rec", "score")
   similarity <- data.table(similarity, key = c("sku", "sku.rec"))
-  colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
   scores <- similarity[newdata][, score]
   return(scores)
 }
@@ -50,7 +53,7 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
   visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
 
   hits.l <- split(hits, by = "visitor.id")
-  res <- lapply(hits.l, function(visitor.hits) {
+  res <- mclapply(hits.l, function(visitor.hits) {
     newdata <- expandHits(model, visitor.hits)
     if(exclude.same) { # exclude seen products from recommendations
       newdata[, same := sku.rec %in% sku, visitor.id]

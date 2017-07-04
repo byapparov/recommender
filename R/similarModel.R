@@ -1,5 +1,5 @@
 
-
+#' @export
 similarityRecommender <- function(data, filter = NULL) {
   m <- userProductHitsToMatrix(data)
   m <- cosineMatrix(m)
@@ -12,6 +12,7 @@ similarityRecommender <- function(data, filter = NULL) {
 #' Predicts similarity score for new product hits data
 #'
 #' @importFrom stats predict
+#' @export
 #' @param object similarity model object
 #' @param newdata product hits data
 predict.similarity.recommender <- function(object, newdata) {
@@ -25,6 +26,7 @@ predict.similarity.recommender <- function(object, newdata) {
   return(scores)
 }
 
+#' @export
 expandHits <- function(object, data) {
   sku <- dummy <- NULL
 

@@ -33,23 +33,23 @@ test_that("Test predict for similarity model", {
   groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p1")
   page.views <- data.table(visitor.id = c("u1", "u1"), sku = c("a", "b"))
   newdata <- expandHits(test.sim.model, page.views)
-  res <- recommendSimilarProducts(test.sim.model, page.views)
-  res.filterred <- filterRecommendations(res, groups, values = 2)
+  filter <- makeRecommendationsFilter(groups, values = 2)
+  res <- recommendSimilarProducts(test.sim.model, page.views, exclude.same = T, filter = filter)
 
-  expect_equal(sort(res.filterred$sku), c("c", "d"), "As c and d are in different groups we get both")
+  expect_equal(sort(res$sku), c("c", "d"), "As c and d are in different groups we get both")
 
   # Setting same group for c & d
   groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p3")
-  res.filterred <- filterRecommendations(res, groups, values = 2)
-  expect_equal(res.filterred$sku, c("d"), "As c and d are in the same group we get one")
+  filter <- makeRecommendationsFilter(groups, values = 2)
+  res <- recommendSimilarProducts(test.sim.model, page.views, exclude.same = T, filter = filter)
+  expect_equal(res$sku, c("d"), "As c and d are in the same group we get one")
 
   # Recommend single sku:
   page.views <- data.table(visitor.id = c("u1"), sku = c("a"))
   newdata <- expandHits(test.sim.model, page.views)
-  res <- recommendSimilarProducts(test.sim.model, page.views)
-  res.filterred <- filterRecommendations(res, groups, values = 1)
-
-  expect_identical(nrow(res.filterred), 1L, "One row retured as requested")
+  filter <- makeRecommendationsFilter(groups, values = 1)
+  res <- recommendSimilarProducts(test.sim.model, page.views, TRUE, filter)
+  expect_identical(nrow(res), 1L, "One row retured as requested")
 
   # SKU does not exist in the matrix:
   page.views <-  data.table(visitor.id = c("u1"), sku = c("z"))

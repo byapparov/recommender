@@ -45,7 +45,8 @@ expandHits <- function(object, data) {
 }
 
 #' @export
-recommendSimilarProducts <- function(model, hits, exclude.same = TRUE) {
+recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
+                                     filter = makeRecommendationsFilter(NULL)) {
   visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
 
   hits.l <- split(hits, by = "visitor.id")
@@ -60,18 +61,23 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE) {
     # Only keep skus that are in the similarity matrix
     newdata <- newdata[!is.na(sim)]
     newdata <- newdata[, list(sim = mean(sim)), by = list(visitor.id, sku.rec)]
+    setnames(newdata, "sku.rec", "sku")
+    setkey(newdata, sku)
+    newdata <- filter(newdata)
   })
   newdata <- rbindlist(res)
-  setnames(newdata, "sku.rec", "sku")
   setkey(newdata, sku)
 
   return (newdata)
 }
 
-filterRecommendations <- function(data, groups, values = 20) {
-  visitor.id <- sku <- sim <- NULL
+#' @export
+makeRecommendationsFilter <- function(groups, values = 20) {
+  function(data) {
+    visitor.id <- sku <- sim <- NULL
 
-  res <- keepOnePerGroup(data, groups)
-  # Limit results to the requested number of skus
-  res <- res[order(sim, decreasing = T), head(.SD[, list(sku, sim)], values), visitor.id]
+    res <- keepOnePerGroup(data, groups)
+    # Limit results to the requested number of skus
+    res <- res[order(sim, decreasing = T), head(.SD[, list(sku, sim)], values), visitor.id]
+  }
 }

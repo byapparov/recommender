@@ -27,7 +27,7 @@ test_that("User hits table produces correct sparce matrix", {
 test_that("Recommendations work with group", {
 
   m <- testSimilarityModel()
-
+  m <- m@sim
   # vector of skus that we want to base recommendations on.
   viewed.skus <- c("a", "b")
 

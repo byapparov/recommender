@@ -1,4 +1,10 @@
+library(methods)
 library(parallel)
+
+#' S4 class that represents similar products recommendation model
+#' @export
+#' @param sim cosine matrix of product similarity
+setClass("similarity.recommender", representation(sim = "matrix"))
 
 #' Factory for the similarity recommendation model
 #' @export
@@ -9,9 +15,23 @@ similarityRecommender <- function(data, filter = NULL) {
   m <- cosineMatrix(m)
   if(is.null(filter)) filter <- colnames(m)
   m <- m[, filter]
-  class(m) <- append(class(m), "similarity.recommender")
-  return(m)
+  model <- new("similarity.recommender", sim = m)
+  return(model)
 }
+
+
+#' Makes similarity score predictions based on the similarity.recommender model
+#' @param object a fitted similarity model object.
+#' @param newdata use product hits.
+#' @return \code{predict} returns a vector with predicted values.
+#' @rdname similarity
+#' @aliases predict,similarity-recommender
+#' @export
+setMethod("predict", signature(object = "similarity.recommender"),
+          function(object, newdata) {
+            similarity.predictor(object, newdata)
+          })
+
 
 #' Predicts similarity score for new product hits data
 #'
@@ -19,12 +39,12 @@ similarityRecommender <- function(data, filter = NULL) {
 #' @export
 #' @param object similarity model object
 #' @param newdata product hits data
-predict.similarity.recommender <- function(object, newdata) {
+similarity.predictor <- function(object, newdata) {
   sku <- score <- NULL
   colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
 
-  target.skus <- intersect(unique(newdata[, sku]), colnames(object))
-  similarity <- melt(object[target.skus, , drop=FALSE], na.rm = T)
+  target.skus <- intersect(unique(newdata[, sku]), colnames(object@sim))
+  similarity <- melt(object@sim[target.skus, , drop=FALSE], na.rm = T)
   if(nrow(similarity) == 0L) return (as.numeric(NULL))
   colnames(similarity) <- c("sku", "sku.rec", "score")
   similarity <- data.table(similarity, key = c("sku", "sku.rec"))
@@ -39,12 +59,12 @@ predict.similarity.recommender <- function(object, newdata) {
 expandHits <- function(object, data) {
   sku <- dummy <- NULL
 
-  missing.skus <- setdiff(unique(data[, sku]), rownames(object))
+  missing.skus <- setdiff(unique(data[, sku]), rownames(object@sim))
   if(length(missing.skus) > 0) {
     warning("Following skus are missing from the similarity model: ", paste(missing.skus, collapse = ", "))
   }
 
-  recommend <- data.table(sku.rec = colnames(object), key = "sku.rec")
+  recommend <- data.table(sku.rec = colnames(object@sim), key = "sku.rec")
   recommend[, dummy := 0L]
   data[, dummy := 0L]
   newdata <- merge(data, recommend, by = "dummy", allow.cartesian = T)
@@ -64,7 +84,7 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
                                      filter = makeRecommendationsFilter()) {
   visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
 
-  hits.l <- split(hits, by = "visitor.id")
+  hits.l <- split(hits, f = substr(hits$visitor.id, 1, 3))
   res <- mclapply(hits.l, function(visitor.hits) {
     newdata <- expandHits(model, visitor.hits)
     if(exclude.same) { # exclude seen products from recommendations

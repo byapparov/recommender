@@ -5,7 +5,7 @@ testSimilarityModel <- function() {
                        0.62, 0.80, 0.26, 1.00 )
 
   test.sim.matrix <- matrix(test.sim.matrix, nrow = 4, ncol = 4)
-  class(test.sim.matrix) <- c("matrix", "similarity.recommender")
   colnames(test.sim.matrix) <- rownames(test.sim.matrix) <- c("a", "b", "c", "d")
-  return(test.sim.matrix)
+  model <- new("similarity.recommender", sim = test.sim.matrix)
+  return(model)
 }

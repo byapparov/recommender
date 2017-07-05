@@ -8,3 +8,5 @@ src/*.dll
 recommender.Rproj
 packrat/lib*/
 .Renviron
+Rprof.out
+*.rds

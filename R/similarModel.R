@@ -1,6 +1,9 @@
 library(parallel)
 
+#' Factory for the similarity recommendation model
 #' @export
+#' @param data product hit stream with visitor.id and sku
+#' @param filter allows to reduce recommendations to a given set
 similarityRecommender <- function(data, filter = NULL) {
   m <- userProductHitsToMatrix(data)
   m <- cosineMatrix(m)
@@ -17,7 +20,7 @@ similarityRecommender <- function(data, filter = NULL) {
 #' @param object similarity model object
 #' @param newdata product hits data
 predict.similarity.recommender <- function(object, newdata) {
-  score <- NULL
+  sku <- score <- NULL
   colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
 
   target.skus <- intersect(unique(newdata[, sku]), colnames(object))
@@ -29,7 +32,10 @@ predict.similarity.recommender <- function(object, newdata) {
   return(scores)
 }
 
+#' Expand visitor product hits data to dataset for prediction
 #' @export
+#' @param object similarity model
+#' @param data visitor page hits
 expandHits <- function(object, data) {
   sku <- dummy <- NULL
 
@@ -47,9 +53,15 @@ expandHits <- function(object, data) {
   return(newdata)
 }
 
+#' Recommend similar products to visitors based on product interraction
 #' @export
+#' @importFrom parallel mclapply
+#' @param model similarity model object
+#' @param hits visitor product hits data to be used for recommendations
+#' @param exclude.same exludes products in the hits data per user if set to TRUE
+#' @param filter function generated with makeRecommendationsFilter()
 recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
-                                     filter = makeRecommendationsFilter(NULL)) {
+                                     filter = makeRecommendationsFilter()) {
   visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
 
   hits.l <- split(hits, by = "visitor.id")
@@ -69,13 +81,17 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
     newdata <- filter(newdata)
   })
   newdata <- rbindlist(res)
-  setkey(newdata, sku)
+  setkeyv(newdata, c("visitor.id", "sku"))
 
   return (newdata)
 }
 
+#' Create filter function to reduce number of recommendations
+#' to a relevant subset
 #' @export
-makeRecommendationsFilter <- function(groups, values = 20) {
+#' @param groups named vector of product types (or other level of product hierarchy)
+#' @param values number of recommendations to return per visitor
+makeRecommendationsFilter <- function(groups = NULL, values = 20) {
   function(data) {
     visitor.id <- sku <- sim <- NULL
 

@@ -4,12 +4,14 @@
 \alias{similarityRecommender}
 \title{Factory for the similarity recommendation model}
 \usage{
-similarityRecommender(data, filter = NULL)
+similarityRecommender(data, filter = NULL, weights = NULL)
 }
 \arguments{
 \item{data}{product hit stream with visitor.id and sku}
 
 \item{filter}{allows to reduce recommendations to a given set}
+
+\item{weights}{named vector of weights to adjust similarity score}
 }
 \description{
 Factory for the similarity recommendation model

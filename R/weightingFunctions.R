@@ -7,14 +7,14 @@
 abjustSimMatrix <- function(data, weights, default = 0) {
   weight <- weights.x <- weights.y <- NULL # fix note for data.table fields
 
+  if(is.null(weights)) return(data) # no changes to scores
+
   weights.init <-  data.table(sku = colnames(data),
                               weights = default)
   weights.given <- data.table(sku = names(weights),
                               weights = weights, key = "sku")
   weights.given <- unique(weights.given, by = "sku")
-
   weights.final <- merge(weights.init, weights.given, by = "sku", all.x=TRUE)
-
   weights.final[, weight := pmax(weights.x, weights.y, na.rm = TRUE)]
 
   # Vector of weights to adjust values in similarity matrix

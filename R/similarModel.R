@@ -4,21 +4,22 @@ library(parallel)
 #' S4 class that represents similar products recommendation model
 #' @export
 #' @param sim cosine matrix of product similarity
-setClass("similarity.recommender", representation(sim = "matrix"))
+setClass("similarity.recommender", slots = c(sim = "matrix"))
 
 #' Factory for the similarity recommendation model
 #' @export
 #' @param data product hit stream with visitor.id and sku
 #' @param filter allows to reduce recommendations to a given set
-similarityRecommender <- function(data, filter = NULL) {
+#' @param weights named vector of weights to adjust similarity score
+similarityRecommender <- function(data, filter = NULL, weights = NULL) {
   m <- userProductHitsToMatrix(data)
   m <- cosineMatrix(m)
-  if(is.null(filter)) filter <- colnames(m)
+  m <- abjustSimMatrix(m, weights)
+  if(is.null(filter)) filter <- colnames(m) # all products will be used
   m <- m[, filter]
   model <- new("similarity.recommender", sim = m)
   return(model)
 }
-
 
 #' Makes similarity score predictions based on the similarity.recommender model
 #' @param object a fitted similarity model object.
@@ -32,7 +33,6 @@ setMethod("predict", signature(object = "similarity.recommender"),
             similarity.predictor(object, newdata)
           })
 
-
 #' Predicts similarity score for new product hits data
 #'
 #' @importFrom stats predict
@@ -44,12 +44,44 @@ similarity.predictor <- function(object, newdata) {
   colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
 
   target.skus <- intersect(unique(newdata[, sku]), colnames(object@sim))
-  similarity <- melt(object@sim[target.skus, , drop=FALSE], na.rm = T)
+  similarity <- melt(object@sim[target.skus, , drop = FALSE], na.rm = T)
   if(nrow(similarity) == 0L) return (as.numeric(NULL))
   colnames(similarity) <- c("sku", "sku.rec", "score")
   similarity <- data.table(similarity, key = c("sku", "sku.rec"))
   scores <- similarity[newdata][, score]
   return(scores)
+}
+
+#' Recommend similar products to visitors based on product interraction
+#' @export
+#' @importFrom parallel mclapply
+#' @param model similarity model object
+#' @param hits visitor product hits data to be used for recommendations
+#' @param exclude.same exludes products in the hits data per user if set to TRUE
+#' @param filter function generated with makeRecommendationsFilter()
+recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
+                                     filter = makeRecommendationsFilter()) {
+  visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
+
+  hits.l <- split(hits, f = substr(hits$visitor.id, 1, 3))
+  res <- mclapply(hits.l, function(visitor.hits) {
+    newdata <- expandHits(model, visitor.hits)
+    if(exclude.same) { # exclude seen products from recommendations
+      newdata <- excludeSame(newdata)
+    }
+    newdata$sim <- predict(model, newdata)
+
+    # Only keep skus that are in the similarity matrix
+    newdata <- newdata[!is.na(sim)]
+    newdata <- newdata[, list(sim = mean(sim)), by = list(visitor.id, sku.rec)]
+    setnames(newdata, "sku.rec", "sku")
+    setkey(newdata, sku)
+    newdata <- filter(newdata)
+  })
+  newdata <- rbindlist(res)
+  setkeyv(newdata, c("visitor.id", "sku"))
+
+  return (newdata)
 }
 
 #' Expand visitor product hits data to dataset for prediction
@@ -73,37 +105,15 @@ expandHits <- function(object, data) {
   return(newdata)
 }
 
-#' Recommend similar products to visitors based on product interraction
-#' @export
-#' @importFrom parallel mclapply
-#' @param model similarity model object
-#' @param hits visitor product hits data to be used for recommendations
-#' @param exclude.same exludes products in the hits data per user if set to TRUE
-#' @param filter function generated with makeRecommendationsFilter()
-recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
-                                     filter = makeRecommendationsFilter()) {
-  visitor.id <- sku <- sku.rec <- sim <- group <- same <- NULL
-
-  hits.l <- split(hits, f = substr(hits$visitor.id, 1, 3))
-  res <- mclapply(hits.l, function(visitor.hits) {
-    newdata <- expandHits(model, visitor.hits)
-    if(exclude.same) { # exclude seen products from recommendations
-      newdata[, same := sku.rec %in% sku, visitor.id]
-      newdata <- newdata[!same == TRUE][, same := NULL]
-    }
-    newdata$sim <- predict(model, newdata)
-
-    # Only keep skus that are in the similarity matrix
-    newdata <- newdata[!is.na(sim)]
-    newdata <- newdata[, list(sim = mean(sim)), by = list(visitor.id, sku.rec)]
-    setnames(newdata, "sku.rec", "sku")
-    setkey(newdata, sku)
-    newdata <- filter(newdata)
-  })
-  newdata <- rbindlist(res)
-  setkeyv(newdata, c("visitor.id", "sku"))
-
-  return (newdata)
+#' Filter out products that were seen by visitor
+#'
+#' @param data sku combinations for prediction with sku.rec and sku fields
+#' @return sku combinations where sku.rec does not have seen sku within visitor.id
+excludeSame <- function(data) {
+  sku.rec <- sku <- same <- visitor.id <- NULL
+  data[, same := sku.rec %in% sku, visitor.id]
+  data <- data[!same == TRUE][, same := NULL]
+  return(data)
 }
 
 #' Create filter function to reduce number of recommendations

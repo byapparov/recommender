@@ -1,6 +1,5 @@
 #' A function that applies a weighting factor to the columns of a table
 #'
-#' @export
 #' @param data a table with similarity scores
 #' @param weights a vector with weights for the columns of the data table
 #' @param default a default weight to be applied

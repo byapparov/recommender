@@ -65,7 +65,7 @@ notInWhich <- function(x, y, filter) {
 }
 
 #' Gets top value per group
-#' @param dt data.table with sim
+#' @param dt data.table with similarity score
 #' @param groups named vector of product groups
 keepOnePerGroup <- function(dt, groups) {
   sim <- group <- NULL
@@ -76,8 +76,9 @@ keepOnePerGroup <- function(dt, groups) {
   groups.table <- data.table(sku = names(groups), group = groups, key = "sku")
   dt <- dt[groups.table, nomatch = 0]
 
-  # Get the best performing sku per group
-  # http://stackoverflow.com/questions/16573995/subset-by-group-with-data-table
+  # Get the best performing sku per group which
+  # can be a combindation of several columns e.g.: c("visitor.id", "group")
   by.cols <- setdiff(colnames(dt), c("sku", "sim"))
+  # http://stackoverflow.com/questions/16573995/subset-by-group-with-data-table
   dt <- dt[dt[, .I[sim == max(sim)], by = by.cols]$V1]
 }

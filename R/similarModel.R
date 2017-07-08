@@ -43,7 +43,8 @@ similarity.predictor <- function(object, newdata) {
   sku <- score <- NULL
   colnames(newdata) <- c("visitor.id", "sku", "sku.rec")
 
-  target.skus <- intersect(unique(newdata[, sku]), colnames(object@sim))
+  # only include products that are in the model
+  target.skus <- intersect(unique(newdata[, sku]), rownames(object@sim))
   similarity <- melt(object@sim[target.skus, , drop = FALSE], na.rm = T)
   if(nrow(similarity) == 0L) return (as.numeric(NULL))
   colnames(similarity) <- c("sku", "sku.rec", "score")

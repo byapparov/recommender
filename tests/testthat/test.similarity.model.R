@@ -78,14 +78,15 @@ test_that("Test recommendations for products", {
   expect_equal(affinity[sku == "b", sku.rec], c("d", "c"),
                label = "a is not recommended for b as d has higher similarity and the same type")
 
+  expect_equal(affinity[sku == "a", sku.rec], c("b", "c"),
+               label = "a is not recommended for b as d has higher similarity and the same type")
+
   affinity <- recommendComplimentaryProducts(test.sim.model, products, limit = 2)
   expect_equal(affinity[sku == "b", sku.rec], c("d", "a"),
                label = "a is recommended for b as when type filter is not provided")
 
-
   affinity <- recommendComplimentaryProducts(test.sim.model, products, "type", limit = 1)
   expect_identical(nrow(affinity), 4L,
                    label = "One recommendation returned per product")
-
 
 })

@@ -85,19 +85,38 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
   return(newdata)
 }
 
-similarProducts <- function(model, skus, group.column, limit) {
+#' Recommend products in product-to-product scenario
+#'
+#' @export
+#'
+#' @param model similarity model object
+#' @param skus data.table of product details with sku field as unique identifier.
+#' @param group.column name of the column that will be used for grouping
+#' @param limit number of records to return per product
+recommendComplimentaryProducts <- function(model, skus,
+                                           group.column = "sku",
+                                           limit = 20L) {
+  sku <- sku.rec <- NULL
 
   dt <- expandHits(model, skus)
   dt <- dt[, .(visitor.id = 1:.N, sku, sku.rec)]
   dt <- excludeSame(dt)
-  dt$sim <- predict(model, dt)
+  dt[, sim := predict(model, dt)]
 
+  # At this point direction of recommendation is not important as model is simetrical.
+  # This will be used here to keep only one value per group in the sku column,
+  # while columns will be renamed later to achieve correct result.
   groups <- skus[, get(group.column)]
   names(groups) <- skus$sku
   dt <- dt[, .(sku, sku.rec, sim)]
   dt <- keepOnePerGroup(dt, groups)
-  dt[, recs.count := 1:.N, by = sku]
+
+  setnames(dt, old = c("sku", "sku.rec"), new = c("sku.rec", "sku"))
+
+  # Count results and limit the records
+  dt[order(sim, decreasing = TRUE), recs.count := 1:.N, by = sku]
   dt <- dt[recs.count <= limit, .(sku, sku.rec, sim)]
+  dt <- dt[order(sku, -sim)]
   invisible(dt)
 }
 

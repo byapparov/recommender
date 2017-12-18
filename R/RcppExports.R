@@ -7,6 +7,6 @@
 #' @param x matrix of prouct hits
 #' @return matrix of product similarity
 cosineCpp <- function(x) {
-    .Call('recommender_cosineCpp', PACKAGE = 'recommender', x)
+    .Call('_recommender_cosineCpp', PACKAGE = 'recommender', x)
 }
 

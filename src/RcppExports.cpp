@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // cosineCpp
 arma::mat cosineCpp(arma::mat x);
-RcppExport SEXP recommender_cosineCpp(SEXP xSEXP) {
+RcppExport SEXP _recommender_cosineCpp(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +19,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"recommender_cosineCpp", (DL_FUNC) &recommender_cosineCpp, 1},
+    {"_recommender_cosineCpp", (DL_FUNC) &_recommender_cosineCpp, 1},
     {NULL, NULL, 0}
 };
 

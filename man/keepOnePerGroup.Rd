@@ -7,7 +7,7 @@
 keepOnePerGroup(dt, groups)
 }
 \arguments{
-\item{dt}{data.table with sim}
+\item{dt}{data.table with similarity score}
 
 \item{groups}{named vector of product groups}
 }

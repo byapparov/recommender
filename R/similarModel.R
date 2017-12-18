@@ -98,9 +98,11 @@ recommendComplimentaryProducts <- function(model, skus,
                                            limit = 20L) {
   sku <- sku.rec <- sim <- recs.count <- group.rec <- NULL
 
-  similarity <- melt(model@sim, na.rm = T)
+  similarity <- melt(model@sim, na.rm = T, variable.factor = FALSE)
   similarity <- data.table(similarity)
   colnames(similarity) <- c("sku", "sku.rec", "sim")
+  similarity[, sku := as.character(sku)]
+  similarity[, sku.rec := as.character(sku.rec)]
   dt <- merge(skus, similarity, by = "sku")
   dt <- dt[sku != sku.rec]
 

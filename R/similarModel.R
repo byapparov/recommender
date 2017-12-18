@@ -85,7 +85,7 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
   return(newdata)
 }
 
-#' Recommend products in product-to-product scenario
+#' Recommend products in item-to-item scenario
 #'
 #' @export
 #'

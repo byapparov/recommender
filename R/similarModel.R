@@ -96,7 +96,7 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
 recommendComplimentaryProducts <- function(model, skus,
                                            group.column = "sku",
                                            limit = 20L) {
-  sku <- sku.rec <- sim <- recs.count <- group.rec <- NULL
+  sku <- sku.rec <- sim <- group.rec <- NULL
 
   similarity <- melt(model@sim, na.rm = T, variable.factor = FALSE)
   similarity <- data.table(similarity)
@@ -111,6 +111,7 @@ recommendComplimentaryProducts <- function(model, skus,
   # while columns will be renamed later to achieve correct result.
   groups <- skus[, .(sku.rec = sku, group.rec = get(group.column))]
   dt <- merge(dt, groups, by = "sku.rec")
+  dt <- dt[get(group.column) != group.rec] # exlude products within the same group
 
   # Get best record per each available group for a given sku
   dt <- dt[dt[, .I[sim == max(sim)], by = .(sku, group.rec)]$V1]

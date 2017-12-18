@@ -10,6 +10,8 @@ recommendComplimentaryProducts(model, skus, group.column = "sku",
 \arguments{
 \item{model}{similarity model object}
 
+\item{skus}{data.table of product details with sku field as unique identifier.}
+
 \item{group.column}{name of the column that will be used for grouping}
 
 \item{limit}{number of records to return per product}

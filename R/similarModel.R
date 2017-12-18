@@ -96,7 +96,7 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
 recommendComplimentaryProducts <- function(model, skus,
                                            group.column = "sku",
                                            limit = 20L) {
-  sku <- sku.rec <- NULL
+  sku <- sku.rec <- sim <- recs.count <- NULL
 
   dt <- expandHits(model, skus)
   dt <- dt[, .(visitor.id = 1:.N, sku, sku.rec)]

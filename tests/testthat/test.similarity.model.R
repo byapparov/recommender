@@ -65,3 +65,14 @@ test_that("Test predict for similarity model", {
   expect_identical(nrow(res), 3L, "One result per user is returned")
 
 })
+
+test_that("Test recommendations for products", {
+  products <- data.table(sku = c("a", "b", "c", "d"),
+                         type = c("p1", "p2", "p3", "p1"))
+
+  affinity <- similarProducts(test.sim.model, products, "type", limit = 2)
+  print(affinity)
+  expect_identical(nrow(affinity), 8L)
+  expect_equal(affinity[sku == "b", sku.rec], c("d", "c"), label = "a is not recommended for b")
+
+})

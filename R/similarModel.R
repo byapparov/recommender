@@ -96,27 +96,26 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
 recommendComplimentaryProducts <- function(model, skus,
                                            group.column = "sku",
                                            limit = 20L) {
-  sku <- sku.rec <- sim <- recs.count <- NULL
+  sku <- sku.rec <- sim <- recs.count <- group.rec <- NULL
 
-  dt <- expandHits(model, skus)
-  dt <- dt[, .(visitor.id = 1:.N, sku, sku.rec)]
-  dt <- excludeSame(dt)
-  dt[, sim := predict(model, dt)]
+  similarity <- melt(model@sim, na.rm = T)
+  similarity <- data.table(similarity)
+  colnames(similarity) <- c("sku", "sku.rec", "sim")
+  dt <- merge(skus, similarity, by = "sku")
+  dt <- dt[sku != sku.rec]
 
   # At this point direction of recommendation is not important as model is simetrical.
   # This will be used here to keep only one value per group in the sku column,
   # while columns will be renamed later to achieve correct result.
-  groups <- skus[, get(group.column)]
-  names(groups) <- skus$sku
-  dt <- dt[, .(sku, sku.rec, sim)]
-  dt <- keepOnePerGroup(dt, groups)
+  groups <- skus[, .(sku.rec = sku, group.rec = get(group.column))]
+  dt <- merge(dt, groups, by = "sku.rec")
 
-  setnames(dt, old = c("sku", "sku.rec"), new = c("sku.rec", "sku"))
+  # Get best record per each available group for a given sku
+  dt <- dt[dt[, .I[sim == max(sim)], by = .(sku, group.rec)]$V1]
 
   # Count results and limit the records
-  dt[order(sim, decreasing = TRUE), recs.count := 1:.N, by = sku]
-  dt <- dt[recs.count <= limit, .(sku, sku.rec, sim)]
-  dt <- dt[order(sku, -sim)]
+  dt <- dt[order(sim, decreasing = TRUE), head(.SD, limit), by = sku]
+  dt <- dt[order(sku, -sim), .(sku, sku.rec, sim)]
   invisible(dt)
 }
 

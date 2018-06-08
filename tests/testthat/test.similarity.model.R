@@ -58,10 +58,17 @@ test_that("Test predict for similarity model", {
 
   # Multiple users
   groups <- c("a" = "p1", "b" = "p2", "c" = "p3", "d" = "p1")
-  page.views <- data.table(visitor.id = c("u1", "u1", "u2", "u3", "u3", "u3"),
-                                  sku = c("a", "b",   "c",  "a",  "a", "d"))
+  page.views <- data.table(
+    user = c("u1", "u1", "u2", "u3", "u3", "u3"),
+    sku = c("a", "b",   "c",  "a",  "a", "d")
+  )
   filter <- makeRecommendationsFilter(groups, values = 1)
-  res <- recommendSimilarProducts(test.sim.model, page.views, exclude.same = T, filter = filter)
+  res <- recommendSimilarProducts(
+    test.sim.model,
+    page.views,
+    exclude.same = T,
+    filter = filter
+  )
   expect_identical(nrow(res), 3L, "One result per user is returned")
 
 })

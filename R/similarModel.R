@@ -63,6 +63,8 @@ similarity.predictor <- function(object, newdata) {
 recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
                                      filter = makeRecommendationsFilter()) {
   visitor.id <- sku <- sku.rec <- sim <- NULL
+  original.names <- names(hits)[1:2]
+  names(hits)[1:2] <- c("visitor.id", "sku")
 
   hits.l <- split(hits, f = substr(hits$visitor.id, 1, 3))
   res <- mclapply(hits.l, function(visitor.hits) {
@@ -80,9 +82,11 @@ recommendSimilarProducts <- function(model, hits, exclude.same = TRUE,
     newdata <- filter(newdata)
   })
   newdata <- rbindlist(res)
-  setkeyv(newdata, c("visitor.id", "sku"))
-
-  return(newdata)
+  print(newdata)
+  names(hits)[1:2] <- original.names
+  names(newdata)[1:2] <- original.names
+  setkeyv(newdata, original.names)
+  newdata
 }
 
 #' Recommend products in item-to-item scenario

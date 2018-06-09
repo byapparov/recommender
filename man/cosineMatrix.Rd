@@ -7,7 +7,7 @@
 cosineMatrix(m)
 }
 \arguments{
-\item{m}{matrix of product hit counts that happened in a single session}
+\item{m}{matrix of product hit counts that happened within a single user}
 }
 \value{
 product similarity matrix

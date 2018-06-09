@@ -16,19 +16,18 @@ userProductHitsToMatrix <- function(product.hits) {
   product.matrix <- data.frame(product.matrix, check.names = F)
   rownames(product.matrix) <- product.matrix[, 1]
   product.matrix <- product.matrix[, -1]
-  res <- as.matrix(product.matrix)
-  return (res)
+  as.matrix(product.matrix)
 }
 
 #' Cosine similarity transformation for product hits
 #' @export
 #' @useDynLib recommender
 #' @description Tranforms product hits matrix to product similarity matrix
-#' @param m matrix of product hit counts that happened in a single session
+#' @param m matrix of product hit counts that happened within a single user
 #' @return product similarity matrix
 cosineMatrix <- function(m) {
   res <- cosineCpp(m)
   colnames(res) <- colnames(m)
   rownames(res) <- rownames(m)
-  return (res)
+  res
 }

@@ -70,7 +70,7 @@ interactions data.
   
   # make user-to-item recommendations table
   res <- recommendSimilarProducts(  
-    test.sim.model, 
+    model, 
     page.views, 
     exclude.same = T, 
     filter = filter

@@ -8,4 +8,4 @@ License: GPL (>= 2)
 Imports: data.table, Rcpp, RcppArmadillo, reshape2, methods
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: testthat
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1

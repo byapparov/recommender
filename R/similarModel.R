@@ -13,8 +13,9 @@ setClass("similarity.recommender", slots = c(sim = "matrix"))
 #' @param weights named vector of weights to adjust similarity score
 similarityRecommender <- function(data, filter = NULL, weights = NULL) {
   m <- userProductHitsToMatrix(data)
-  m <- cosineMatrix(m)
+  m <- cosineMatrixInt(m)
   m <- adjustSimMatrix(m, weights)
+  mode(m) <- "integer"
   if (is.null(filter)) filter <- colnames(m) # all products will be used
   m <- m[, filter]
   model <- new("similarity.recommender", sim = m)

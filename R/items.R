@@ -10,7 +10,7 @@ userProductHitsToMatrix <- function(product.hits) {
   colnames(product.hits) <- c("visitor.id", "sku")
 
   product.matches <- merge(product.hits, product.hits, by = "visitor.id", allow.cartesian = TRUE)
-  product.matches <- subset(product.matches, sku.x != sku.y)
+  product.matches <- product.matches[sku.x != sku.y]
 
   product.matrix <- dcast(product.matches, sku.x ~ sku.y, value.var = "visitor.id", fun.aggregate = length)
   product.matrix <- data.frame(product.matrix, check.names = F)
@@ -27,6 +27,23 @@ userProductHitsToMatrix <- function(product.hits) {
 #' @return product similarity matrix
 cosineMatrix <- function(m) {
   res <- cosineCpp(m)
+  colnames(res) <- colnames(m)
+  rownames(res) <- rownames(m)
+  res
+}
+
+#' Cosine similarity transformation for product hits as integer score between 0 and 100
+#' @export
+#' @useDynLib recommender
+#' @description Tranforms product hits matrix to integer product similarity matrix
+#' @param m matrix of product hit counts that happened within a single user
+#' @return product similarity matrix
+cosineMatrixInt <- function(m) {
+  res <- matrix(
+    as.integer(cosineCpp(m) * 100), 
+    nrow = nrow(m), 
+    ncol = ncol(m)
+  )
   colnames(res) <- colnames(m)
   rownames(res) <- rownames(m)
   res

@@ -13,7 +13,11 @@ test_that("Test simlarity model and predict", {
   new.hits.expanded <- expandHits(model, new.hits)
 
   new.hits.expanded$sim <- predict(model, new.hits.expanded)
-  expect_equal(new.hits.expanded[sku == "p1" & sku.rec == "p3", sim], rep(0.408, 2), tolerance = 1e-2)
+  expect_equal(
+    new.hits.expanded[sku == "p1" & sku.rec == "p3", sim], 
+    rep(as.integer(0.408 * 100), 2), 
+    tolerance = 1e-2
+  )
 })
 
 test_that("Test expanding of hits to new dataset", {
